@@ -212,7 +212,7 @@ class Grid {
     // returns the column for row row at longitude lon
     std::size_t rowAndLonToCol(std::size_t row, Longitude lon) const{
         // if we are at the rightmost edge we need the last cell
-        if(lon == Longitude(180)) return m_gridCells.at(row).rowCells.size() - 1;
+        if(lon == Longitude(180)) return 0;
         auto colCellWidth = m_gridCells.at(row).cellWidthDeg;
         return std::floor((CoordinatesMath::wrap180(static_cast<double>(lon)) + 180) / static_cast<double>(colCellWidth));
     }
@@ -234,24 +234,18 @@ class Grid {
     }
     
 
-    // Truncates a Longitude coordinate to right
-    double truncateLongitudeCoordinate(double coordinate, double precision) 
-    {           
-            return std::floor(coordinate / precision) * precision;
-    }
-
-    // Truncates a Latitude to bottom
-    double truncateLatitudeCoordinate(double coordinate, double precision) 
+    // Truncates a coordinate to cell
+    double truncateCoordinates(double coordinate, double precision) const
     {           
             return std::floor(coordinate / precision) * precision;
     }
 
     // truncates coordinates to representing coordinates of containing cell
-    Coordinates truncateCoordinatesToCell(const Coordinates &coords)
+    Coordinates truncateCoordinatesToCell(const Coordinates &coords) const
     {
         double rowWidthOrig = m_gridCells.at(latToRow(coords.latitude())).cellWidthDeg;
-        double longitude = truncateLongitudeCoordinate(static_cast<double>(coords.longitude()), rowWidthOrig);
-        double latitude = truncateLatitudeCoordinate(static_cast<double>(coords.latitude()),static_cast<double>(m_cellHeightDeg));
+        double longitude = truncateCoordinates(static_cast<double>(coords.longitude()), rowWidthOrig);
+        double latitude = truncateCoordinates(static_cast<double>(coords.latitude()),static_cast<double>(m_cellHeightDeg));
         // 180 [deg] and - 180 [deg] are the same cell
         if(std::fabs(longitude + 180) <= Epsilon)
         {
@@ -266,95 +260,13 @@ class Grid {
             Latitude{latitude}};
     }
 
-    // Adds all surrounding cell coords to the stack
-    void pushCellNeighborsToStack(std::stack<Coordinates> &stack, const Coordinates &cellCoords, std::unordered_set<Coordinates> visitedCoords){
-        
-        Longitude longitude = cellCoords.longitude();
-        Latitude latitude = cellCoords.latitude();
-        double latDbl = static_cast<double>(latitude);
-        double rowWidthOrig = m_gridCells.at(latToRow(latitude)).cellWidthDeg;
-
-        // Our poles
-        static const Coordinates NorthPoleCoords(Longitude(0), Latitude(90));
-        static const Coordinates SouthPoleCoords(Longitude(0), Latitude(-90));
-
-        // If we are at a pole, our neighbors are every cell surrounding it
-        if(std::fabs(latDbl - 90) <= Epsilon)
-        {
-            Latitude neighborLat(90 - static_cast<double>(m_cellHeightDeg));
-            for(double lon = -180 ; lon <= 180 ; lon += rowWidthOrig)
-            {
-            Coordinates neighborCoords(Longitude(lon), neighborLat);
-                if(!(visitedCoords.contains(neighborCoords)))
-                        stack.push(neighborCoords);
-            }
-        }
-
-        if(std::fabs(latDbl  + 90) <= Epsilon)
-        {
-            Latitude neighborLat(-90 + static_cast<double>(m_cellHeightDeg));
-            for(double lon = -180 ; lon <= 180 ; lon += rowWidthOrig)
-            {
-            Coordinates neighborCoords(Longitude(lon), neighborLat);
-                if(!(visitedCoords.contains(neighborCoords)))
-                        stack.push(neighborCoords);
-            }
-        }
-        
-        // If we are not at the poles
-        if(latDbl < 90 && latDbl > -90){
-
-            Latitude northLat = Latitude(latitude + m_cellHeightDeg);
-            Latitude southLat = Latitude(latitude - m_cellHeightDeg);
-            // Note: Longitudes are phase-aligned in the constructor
-            Longitude eastLon = Longitude(longitude + Longitude(rowWidthOrig));
-            Longitude westLon = Longitude(longitude - Longitude(rowWidthOrig));
-
-            bool northPoleTest = (northLat != Latitude(90));
-            bool southPoleTest = (southLat != Latitude(-90));
-            // If we are at the poles we need to set the longitude to 0.
-            Longitude eastLonNorth = northPoleTest ? eastLon : Longitude(0);
-            Longitude westLongNorth = northPoleTest ? westLon : Longitude(0);
-            Longitude eastLonSouth = southPoleTest ? eastLon : Longitude(0);
-            Longitude westLongSouth = southPoleTest ? westLon : Longitude(0);
-
-            Coordinates northCoords = northPoleTest ? Coordinates(longitude, northLat) : NorthPoleCoords;
-            Coordinates southCoords = southPoleTest ? Coordinates(longitude, southLat) : SouthPoleCoords;
-            Coordinates eastCoords(eastLon,latitude);
-            Coordinates westCoords(westLon, latitude);
-            Coordinates northWestCoords(westLongNorth, northLat);
-            Coordinates northEastCoords(eastLonNorth, northLat);
-            Coordinates southWestCoords(westLongSouth, southLat);
-            Coordinates southEastCoords(eastLonSouth, southLat);
-
-            // Push
-            if(!(visitedCoords.contains(northCoords)))
-                    stack.push(northCoords);
-            if(!(visitedCoords.contains(southCoords)))
-                    stack.push(southCoords);
-            if(!(visitedCoords.contains(eastCoords)))
-                    stack.push(eastCoords);
-            if(!(visitedCoords.contains(westCoords)))
-                    stack.push(westCoords);
-            if(!(visitedCoords.contains(northWestCoords)))
-                    stack.push(northWestCoords);
-            if(!(visitedCoords.contains(northEastCoords)))
-                    stack.push(northEastCoords);
-            if(!(visitedCoords.contains(southWestCoords)))
-                    stack.push(southWestCoords);
-            if(!(visitedCoords.contains(southEastCoords)))
-                    stack.push(southEastCoords);
-        }
-    }
-
     // Checks if a cell is contained within a given radius from a point
-    bool isCellInRadius(const Coordinates &coords, const Coordinates &center, Meters radius){
+    bool isCellInRadius(const Coordinates &coords, const Coordinates &center, Meters radius) const{
         auto rowWidth = m_gridCells.at(latToRow(coords.latitude())).cellWidthDeg; 
         // We just check the if the distance from the center to any of the edges is smaller or equal to radius
         Coordinates bottomRight = Coordinates(coords.longitude() + rowWidth, coords.latitude());
         Coordinates topLeft = Coordinates(coords.longitude(), coords.latitude() + m_cellHeightDeg);
         Coordinates topRight = Coordinates(coords.longitude() + rowWidth, coords.latitude() + m_cellHeightDeg);
-
         // check if any edge is close enough
         if(CoordinatesMath::distanceFromSegment(center, coords, topLeft) <= radius) return true;
         if(CoordinatesMath::distanceFromSegment(center, coords, bottomRight) <= radius) return true;
@@ -363,6 +275,34 @@ class Grid {
         return false;
     }
 
+
+    // adds all the cells in the row corresponding to nextCoordsRow which are at most radius away from center
+    void getCellsInRow(const Coordinates &nextCoords, const Coordinates &center,
+        Meters radius, std::unordered_set<const Cell*> &visitedCells , std::vector<const Cell*> &results) const{
+        auto nextCoordsRow = nextCoords;
+        Longitude rowWidth = m_gridCells.at(latToRow(nextCoordsRow.latitude())).cellWidthDeg;
+        // Going forward in row
+        while(isCellInRadius(nextCoordsRow, center, radius) && !visitedCells.contains(getCellAt(nextCoordsRow))){
+            // add the cell because it's in range
+           
+            auto curCell = getCellAt(nextCoordsRow);
+            results.emplace_back(curCell);
+            visitedCells.insert(curCell);
+            // go to the next cell in row
+            nextCoordsRow = Coordinates(Longitude(nextCoordsRow.longitude() + rowWidth), nextCoords.latitude());
+        }
+        // go backwards in row
+        nextCoordsRow = Coordinates(Longitude(nextCoords.longitude() - rowWidth), nextCoords.latitude());
+
+        while(isCellInRadius(nextCoordsRow, center, radius) && !visitedCells.contains(getCellAt(nextCoordsRow))){
+            // add the cell because it's in range
+            auto curCell = getCellAt(nextCoordsRow);
+            results.emplace_back(curCell);
+            visitedCells.insert(curCell);
+            // go to the previous cell in row
+            nextCoordsRow = Coordinates(Longitude(nextCoordsRow.longitude() - rowWidth), nextCoords.latitude());
+        }
+    }
     public:
     // Grid’s Constructors and Assignment:
     Grid() : m_cellHeightDeg((double)180 / num_rows), m_cellHeightMeters(4 * CoordinatesMath::half_earth_hemisphere / num_rows), m_numCells(0)
@@ -394,30 +334,29 @@ class Grid {
     std::vector<const Cell*> getCellsAt(Coordinates center, Meters radius) const {
         // This will hold our results
         std::vector<const Cell*> results;
-        // This is the stack for traversing the cells via coordinates
-        std::stack<Coordinates> traversalStack;
-        // We dont want to re-visit coordinates
-        std::unordered_set<Coordinates> visitedCoords;
-        // insert the intial coordinates
-        Coordinates initialCoordinates = truncateCoordinatesToCell(center);
-        traversalStack.push(initialCoordinates);
-        // We traverse while the stack isnt empty
-        do{
-            // get first coordinates
-            auto curCoords = traversalStack.top();
-            traversalStack.pop();
-            // Ignore entities we already checked
-            if(visitedCoords.contains(curCoords)) continue;
-            visitedCoords.insert(curCoords);
-            // If the cell isnt in the radius we stop, otherwise we continue to the next cells
-            if(!isCellInRadius(curCoords, center, radius)) continue;
-            // otherwise we insert the cell and check the neighbors
-            results.emplace_back(getCellAt(curCoords));
-            pushCellNeighborsToStack(visitedCoords, curCoords, visitedCoords);
+        std::unordered_set<const Cell*> visitedCells;
+        auto nextCoords = truncateCoordinatesToCell(center);
 
-        }while(!traversalStack.empty());
-        // We then traverse in a BFS like fashion on the cells, we stop when the stack is empty
-        return std::vector<const Cell*>{};
+        // In this loop we are going upwards from center cell and checking adding all the cells in the correct range
+        while(isCellInRadius(nextCoords, center, radius) && !visitedCells.contains(getCellAt(nextCoords))){
+            // get all the cells in the row
+            getCellsInRow(nextCoords, center, radius, visitedCells, results);
+            // go to row above
+            nextCoords = Coordinates(nextCoords.longitude(), nextCoords.latitude() + m_cellHeightDeg);
+        }
+        // going downards now
+        nextCoords = truncateCoordinatesToCell(center);
+        nextCoords = Coordinates(nextCoords.longitude(), nextCoords.latitude() - m_cellHeightDeg);
+        while(isCellInRadius(nextCoords, center, radius) && !visitedCells.contains(getCellAt(nextCoords))){
+            // get all the cells in the row
+            getCellsInRow(nextCoords, center, radius, visitedCells, results);
+            // go to row below
+            nextCoords = Coordinates(nextCoords.longitude(), nextCoords.latitude() - m_cellHeightDeg);
+        }
+        // If the radius is so smaller that we didn't reach any of the edges of the cell containing the coordinate, only this cell is
+        // in the range
+        if(results.size() == 0) results.emplace_back(getCellAt(center));
+        return results;
     }
 
     // additional auxiliary functions:

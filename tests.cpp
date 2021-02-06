@@ -260,3 +260,37 @@ TEST(GISEx4, checkNumCols){
     EXPECT_EQ(grid.numCols(nearEquator1), (std::size_t) 4);
     EXPECT_EQ(grid.numCols(nearEquator2), (std::size_t) 4);
 } 
+
+// Checks the cell iterator is of expected type and validates all the entries are correct
+// TEST(GISEx4, checkGridIterator){
+//         struct A {
+//         virtual ~A() {}
+//         virtual void foo() const = 0;
+//     };
+//     struct B : A { void foo() const override {} };
+//     Grid<A, 4> grid;
+//     EXPECT_EQ(typeid(*(grid->begin())), typeid(Grid<A, 4>::Cell&));
+// }
+
+/****************************** Bonus Tests ******************************/
+// Checks entire map for cells (radius is larger than earth)
+TEST(GISEx4, checkGetEntitiesRadiusEntireMap){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    Grid<A, 4> grid;
+    Coordinates c(Longitude(180), Latitude(-20));
+    EXPECT_EQ(grid.getCellsAt(c, CoordinatesMath::earth_radius * 100).size(), grid.numCells());
+}
+
+// Checks entities within 0 radius (should only return one cell)
+TEST(GISEx4, checkGetEntitiesRadius){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    Grid<A, 12> grid;
+    Coordinates c(Longitude(180), Latitude(-20));
+    EXPECT_EQ(grid.getCellsAt(c, Meters(0)).size(), (std::size_t) 1);
+} 
