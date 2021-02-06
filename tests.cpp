@@ -3,6 +3,8 @@
 #include "CoordinatesMath.h"
 #include <cassert>
 
+
+/****************************** Cell Tests ******************************/
 // This tests getEntitiesView
 TEST(GISEx4, DocTest) {
     struct A {
@@ -218,4 +220,43 @@ TEST(GISEx4, getEntitiesAbstractPredicateForConcreteAndLimit){
         return en.foo();
     };
     EXPECT_EQ(p_cell->getEntities<B>(predicate, 1).size(), (std::size_t) 1);
+} 
+
+/****************************** Grid Tests ******************************/
+// Checks if numRows works as expected
+TEST(GISEx4, checkNumRows){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    Grid<A, 10> grid;
+    EXPECT_EQ(grid.numRows(), (std::size_t) 10);
+} 
+// Checks if numRows works as expected
+// when setting 4  we expect to have less cols near the poles thus having more cells 
+TEST(GISEx4, checkNumCells){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    Grid<A, 4> grid;
+    EXPECT_EQ(grid.numCells(), (std::size_t) 12);
+} 
+
+// when setting 4 rows we expect to have less cols near the poles and more near the equator
+// expecting 2 columns near the poles and in each one near the equator 4, longitude should have no effect
+TEST(GISEx4, checkNumCols){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    Grid<A, 4> grid;
+    Coordinates southPole(Longitude(12), Latitude(-90));
+    Coordinates northPole(Longitude(15), Latitude(90));
+    Coordinates nearEquator1(Longitude(180), Latitude(-20));
+    Coordinates nearEquator2(Longitude(-180), Latitude(20));
+    EXPECT_EQ(grid.numCols(northPole), (std::size_t) 2);
+    EXPECT_EQ(grid.numCols(southPole), (std::size_t) 2);
+    EXPECT_EQ(grid.numCols(nearEquator1), (std::size_t) 4);
+    EXPECT_EQ(grid.numCols(nearEquator2), (std::size_t) 4);
 } 

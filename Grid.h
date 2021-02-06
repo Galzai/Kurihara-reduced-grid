@@ -211,12 +211,16 @@ class Grid {
 
     // returns the column for row row at longitude lon
     std::size_t rowAndLonToCol(std::size_t row, Longitude lon) const{
+        // if we are at the rightmost edge we need the last cell
+        if(lon == Longitude(180)) return m_gridCells.at(row).rowCells.size() - 1;
         auto colCellWidth = m_gridCells.at(row).cellWidthDeg;
         return std::floor((CoordinatesMath::wrap180(static_cast<double>(lon)) + 180) / static_cast<double>(colCellWidth));
     }
 
     // Converts latitude to row
     std::size_t latToRow(Latitude lat) const{
+        //if we are at the north pole we need to return the last row
+        if(lat == Latitude(90)) return m_gridCells.size() - 1;
         // need to align to 180 and divide by cell height to get the row
         return std::floor((CoordinatesMath::wrap90(static_cast<double>(lat)) + 90) / static_cast<double>(m_cellHeightDeg));
     }
@@ -361,7 +365,7 @@ class Grid {
 
     public:
     // Grid’s Constructors and Assignment:
-    Grid() : m_cellHeightDeg((double)180 / num_rows), m_cellHeightMeters((4 * CoordinatesMath::half_earth_hemisphere) / 180), m_numCells(0)
+    Grid() : m_cellHeightDeg((double)180 / num_rows), m_cellHeightMeters(4 * CoordinatesMath::half_earth_hemisphere / num_rows), m_numCells(0)
     {
         initializeCells();
     }
