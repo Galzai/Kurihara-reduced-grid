@@ -62,10 +62,10 @@ class Grid {
         // (Cell::A1) Getting Entities from a Cell:
         // returns all entities in that cell, which return true for the PredicateFunc.
         template<typename PredicateFunc>
-        std::vector<Entity*> getEntities(PredicateFunc&&) const {
+        std::vector<Entity*> getEntities(PredicateFunc&& func) const {
             std::vector<Entity*> filteredEntities;
             std::copy_if(m_allEntities.begin(), m_allEntities.end(), std::back_inserter(filteredEntities), 
-            [](Entity *entity){ return PredicateFunc(*entity);} );
+            [func](Entity *entity){ return func(*entity);} );
             return filteredEntities;
         }
 
@@ -74,26 +74,33 @@ class Grid {
         // returns all entities of type ActualT which return true for the PredicateFunc.
         template<typename ActualT, typename PredicateFunc> 
         requires concrete_derived_or_same<ActualT, Entity>
-        std::vector<ActualT*> getEntities(PredicateFunc&&) const {
-            std::vector<Entity*> filteredEntities;
-            auto typeItr = m_entitiesByType.find(typeid(ActualT));
-            std::copy_if(typeItr.begin(), typeItr.end(), std::back_inserter(filteredEntities), 
-            [](Entity *entity){ return PredicateFunc(*entity);} );
+        std::vector<ActualT*> getEntities(PredicateFunc&& func) const {
+            std::vector<ActualT*> filteredEntities;
+            if(m_entitiesByType.find(typeid(ActualT)) == m_entitiesByType.end()) return filteredEntities;
+            // copy untill no more to copy
+            for(auto p_entity : m_entitiesByType.at(typeid(ActualT)))
+            {
+                ActualT *p_actualEntity = dynamic_cast<ActualT*>(p_entity);
+                if(func(*p_actualEntity)){
+                    filteredEntities.push_back(p_actualEntity);
+                }
+            }
             return filteredEntities;
         }
 
         // (Cell::B2) 
         // same as (Cell::B1) above but with a limit on the number of returned entities (up to limit entities).
         template<typename ActualT, typename PredicateFunc> requires concrete_derived_or_same<ActualT, Entity>
-        std::vector<ActualT*> getEntities(PredicateFunc&&, std::size_t limit) const {
-            std::vector<Entity*> filteredEntities;
+        std::vector<ActualT*> getEntities(PredicateFunc&& func, std::size_t limit) const {
+            std::vector<ActualT*> filteredEntities;
             std::size_t curCopied = 0;
-            auto typeItr = m_entitiesByType.find(typeid(ActualT));
+            if(m_entitiesByType.find(typeid(ActualT)) == m_entitiesByType.end()) return filteredEntities;
             // copy untill full or untill no more to copy
-            for(auto entity : typeItr)
+            for(auto p_entity : m_entitiesByType.at(typeid(ActualT)))
             {
-                if(PredicateFunc(*entity)){
-                    filteredEntities.push_back(entity);
+                ActualT *p_actualEntity = dynamic_cast<ActualT*>(p_entity);
+                if(func(*p_actualEntity)){
+                    filteredEntities.push_back(p_actualEntity);
                     if(++curCopied == limit) break;
                 }
             }

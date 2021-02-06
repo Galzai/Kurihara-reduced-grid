@@ -3,6 +3,7 @@
 #include "CoordinatesMath.h"
 #include <cassert>
 
+// This tests getEntitiesView
 TEST(GISEx4, DocTest) {
     struct A {
         virtual ~A() {}
@@ -88,3 +89,133 @@ TEST(GISEx4, checkConcreteNumEntities){
     EXPECT_EQ(p_cell->numEntities<C>(), (std::size_t)1);
     EXPECT_EQ(p_cell->numEntities<B>(), (std::size_t)2);
 }
+
+// Checks if getEntities works with abstract type
+TEST(GISEx4, getEntitiesPredicateForAbstract){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    struct B : A { bool foo() const override {return true;} };
+    struct C : A { bool foo() const override {return true;} };
+    struct D : A { bool foo() const override {return false;} };
+    Grid<A, 4300> grid;
+    B b1, b2;
+    C c;
+    D d;
+
+    Coordinates coord{Longitude{45}, Latitude{89.009}};
+    const auto p_cell = grid.add(coord, b1);
+    grid.add(coord, b2);
+    grid.add(coord, c);
+    grid.add(coord, d);
+    auto predicate = [](const A& en){
+        return en.foo();
+    };
+    EXPECT_EQ(p_cell->getEntities(predicate).size(), (std::size_t) 3);
+} 
+
+// Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&);
+TEST(GISEx4, getEntitiesAbstractPredicateForConcrete){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    struct B : A {B(int val) :x(val){}; int x; bool foo() const override {return x == 1;} };
+    struct C : A { bool foo() const override {return true;} };
+    struct D : A { bool foo() const override {return false;} };
+    Grid<A, 5> grid;
+    B b1(1), b2(2) ,b3(1);
+    C c;
+    D d;
+
+    Coordinates coord{Longitude{45}, Latitude{89.009}};
+    const auto p_cell = grid.add(coord, b1);
+    grid.add(coord, b2);
+    grid.add(coord, b3);
+    grid.add(coord, c);
+    grid.add(coord, d);
+    auto predicate = [](const A& en){
+        return en.foo();
+    };
+    EXPECT_EQ(p_cell->getEntities<B>(predicate).size(), (std::size_t) 2);
+} 
+
+// Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&);
+TEST(GISEx4, getEntitiesConcretePredicateForConcrete){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    struct B : A {B(int val) :x(val){}; int x; bool foo() const override {return x == 1;} };
+    struct C : A { bool foo() const override {return true;} };
+    struct D : A { bool foo() const override {return false;} };
+    Grid<A, 5> grid;
+    B b1(1), b2(2) ,b3(1);
+    C c;
+    D d;
+
+    Coordinates coord{Longitude{45}, Latitude{89.009}};
+    const auto p_cell = grid.add(coord, b1);
+    grid.add(coord, b2);
+    grid.add(coord, b3);
+    grid.add(coord, c);
+    grid.add(coord, d);
+    auto predicate = [](const B& en){
+        return en.foo();
+    };
+    EXPECT_EQ(p_cell->getEntities<B>(predicate).size(), (std::size_t) 2);
+}
+
+
+// Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&) and limit;
+TEST(GISEx4, getEntitiesConcretePredicateForConcreteAndLimit){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    struct B : A {B(int val) :x(val){}; int x; bool foo() const override {return x == 1;} };
+    struct C : A { bool foo() const override {return true;} };
+    struct D : A { bool foo() const override {return false;} };
+    Grid<A, 5> grid;
+    B b1(1), b2(1) ,b3(1);
+    C c;
+    D d;
+
+    Coordinates coord{Longitude{45}, Latitude{89.009}};
+    const auto p_cell = grid.add(coord, b1);
+    grid.add(coord, b2);
+    grid.add(coord, b3);
+    grid.add(coord, c);
+    grid.add(coord, d);
+    auto predicate = [](const B& en){
+        return en.foo();
+    };
+    EXPECT_EQ(p_cell->getEntities<B>(predicate, 1).size(), (std::size_t) 1);
+}
+
+// Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&) and limit;
+TEST(GISEx4, getEntitiesAbstractPredicateForConcreteAndLimit){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    struct B : A {B(int val) :x(val){}; int x; bool foo() const override {return x == 1;} };
+    struct C : A { bool foo() const override {return true;} };
+    struct D : A { bool foo() const override {return false;} };
+    Grid<A, 5> grid;
+    B b1(1), b2(1) ,b3(1);
+    C c;
+    D d;
+
+    Coordinates coord{Longitude{45}, Latitude{89.009}};
+    const auto p_cell = grid.add(coord, b1);
+    grid.add(coord, b2);
+    grid.add(coord, b3);
+    grid.add(coord, c);
+    grid.add(coord, d);
+    auto predicate = [](const A& en){
+        return en.foo();
+    };
+    EXPECT_EQ(p_cell->getEntities<B>(predicate, 1).size(), (std::size_t) 1);
+} 
