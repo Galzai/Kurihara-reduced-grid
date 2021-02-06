@@ -6,6 +6,7 @@
 #include <typeindex>
 #include <concepts>
 #include <ranges>
+#include <list>
 #include <unordered_map>
 
 // Two concepts required by the below functions:
@@ -26,13 +27,13 @@ class Grid {
     Meters m_cellHeightMeters;
     std::size_t m_numCells;
     mutable std::vector<GridRow> m_gridCells;
-    std::vector<Cell*> m_cellRefs;
+    std::list<Cell> m_cells;
 
     // Simple struct for compact representation of row
     struct GridRow{
         Longitude cellWidthDeg;
-        std::vector<Cell> rowCells;
-        GridRow(Longitude cellWidthVal, std::vector<Cell> rowCellsVal) : cellWidthDeg(cellWidthVal), rowCells(rowCellsVal){};
+        std::vector<Cell*> rowCells;
+        GridRow(Longitude cellWidthVal, std::vector<Cell*> rowCellsVal) : cellWidthDeg(cellWidthVal), rowCells(rowCellsVal){};
     };
     
     // private inner class Cell
@@ -192,10 +193,11 @@ class Grid {
             int numRowCells = std::ceil(avgPerim / m_cellHeightMeters);
             m_numCells += numRowCells;
             // initialize row struct
-            GridRow newRow(Longitude(360 / numRowCells), std::vector<Cell>(numRowCells, Cell()));
+            GridRow newRow(Longitude(360 / numRowCells), std::vector<Cell*>());
             // We add all the cells for our iterator to use
-            for(auto &cell: newRow.rowCells){
-                m_cellRefs.emplace_back(&cell);
+            for(int i = 0; i <  numRowCells; ++i){
+                Cell &p_cell = m_cells.emplace_back(Cell());
+                newRow.rowCells.push_back(&p_cell);
             }
             // move the row struct to our vector
             m_gridCells.emplace_back(std::move(newRow));
@@ -223,7 +225,7 @@ class Grid {
         // We just get the row and col and return the value
         auto row = latToRow(c.latitude());
         auto col = rowAndLonToCol(row, c.longitude());
-        return &(*(m_gridCells.at(row).rowCells.begin() + col));
+        return m_gridCells.at(row).rowCells.at(col);
     }
     
 public:
@@ -270,7 +272,7 @@ public:
     
     // (Grid::C2) 
     std::size_t numCols(Coordinates c) const noexcept {
-        return m_gridCells.at(latToRow(c.latitude()));
+        return m_gridCells.at(latToRow(c.latitude())).rowCells.size();
     }
 
     // (Grid::C3) 
@@ -286,10 +288,10 @@ public:
     // 2. All Cells, if is_sparse==false
     auto begin() const noexcept { 
 
-        return m_cellRefs.begin(); 
+        return m_cells.begin(); 
     }
 
     auto end() const noexcept { 
-        return m_cellRefs.end(); 
+        return m_cells.end(); 
     }
 };
