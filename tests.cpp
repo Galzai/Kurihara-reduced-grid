@@ -38,3 +38,53 @@ TEST(GISEx4, DocTest) {
         ++i;
     }
 }
+
+// Trying to add an entity to cell and validating it was inserted to correct cell
+TEST(GISEx4, addToCell){
+    struct A {
+        virtual ~A() {}
+        virtual void foo() const = 0;
+    };
+    struct B : A { void foo() const override {} };
+    Coordinates coord{Longitude{361}, Latitude{1}};
+    Grid<A, 2310> grid;
+    B b;
+    const auto p_cell2 = grid.getCellAt(coord); 
+    EXPECT_EQ(p_cell2->numEntities(), (std::size_t)0);
+    const auto p_cell = grid.add(coord, b);
+    EXPECT_EQ(p_cell, p_cell2);
+    EXPECT_EQ(p_cell->numEntities(), (std::size_t)1);
+}
+
+// Checks the cell iterator is of expected type and validates all the entries are correct
+TEST(GISEx4, checkCellIterator){
+        struct A {
+        virtual ~A() {}
+        virtual void foo() const = 0;
+    };
+    struct B : A { void foo() const override {} };
+    Coordinates coord{Longitude{90}, Latitude{0}};
+    B b;
+    Grid<A, 300> grid;
+    const auto p_cell = grid.add(coord, b);
+    EXPECT_EQ(typeid(*(p_cell->begin())), typeid(A*));
+}
+
+// Checks the cell iterator is of expected type and validates all the entries are correct
+TEST(GISEx4, checkConcreteNumEntities){
+        struct A {
+        virtual ~A() {}
+        virtual void foo() const = 0;
+    };
+    struct B : A { void foo() const override {} };
+    struct C : A { void foo() const override {} };
+    Coordinates coord{Longitude{90}, Latitude{0}};
+    B b1, b2;
+    C c;
+    Grid<A, 300> grid;
+    const auto p_cell = grid.add(coord, b1);
+    grid.add(coord, b2);
+    grid.add(coord, c);
+    EXPECT_EQ(p_cell->numEntities<C>(), (std::size_t)1);
+    EXPECT_EQ(p_cell->numEntities<B>(), (std::size_t)2);
+}

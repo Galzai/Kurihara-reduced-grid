@@ -405,7 +405,6 @@ class Grid {
             pushCellNeighborsToStack(visitedCoords, curCoords, visitedCoords);
 
         }while(!traversalStack.empty());
-
         // We then traverse in a BFS like fashion on the cells, we stop when the stack is empty
         return std::vector<const Cell*>{};
     }
