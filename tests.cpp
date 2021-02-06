@@ -262,15 +262,19 @@ TEST(GISEx4, checkNumCols){
 } 
 
 // Checks the cell iterator is of expected type and validates all the entries are correct
-// TEST(GISEx4, checkGridIterator){
-//         struct A {
-//         virtual ~A() {}
-//         virtual void foo() const = 0;
-//     };
-//     struct B : A { void foo() const override {} };
-//     Grid<A, 4> grid;
-//     EXPECT_EQ(typeid(*(grid->begin())), typeid(Grid<A, 4>::Cell&));
-// }
+TEST(GISEx4, checkGridIterator){
+        struct A {
+        virtual ~A() {}
+        virtual void foo() const = 0;
+    };
+    struct B : A { void foo() const override {} };
+    B b1;
+    Grid<A, 1> grid;
+    auto &firstCell = (*grid.begin());
+    Coordinates southPole(Longitude(12), Latitude(-90));
+    grid.add(southPole, b1);
+    EXPECT_EQ(firstCell.numEntities(), (std::size_t) 1);
+}
 
 /****************************** Bonus Tests ******************************/
 // Checks entire map for cells (radius is larger than earth)

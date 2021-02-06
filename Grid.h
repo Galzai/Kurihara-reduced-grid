@@ -24,6 +24,7 @@ template<typename Entity, std::size_t num_rows> requires (num_rows > 0)
 class Grid { 
     struct GridRow;
     class Cell;
+    friend class FooTest;
 
     Latitude m_cellHeightDeg;
     Meters m_cellHeightMeters;
