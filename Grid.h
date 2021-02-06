@@ -45,12 +45,6 @@ class Grid {
         // Add an entity of concrete type to cell by type and to all
         template<typename ActualT> requires derived_or_same<ActualT, Entity>
         void add(ActualT& e) {
-            auto itr = m_entitiesByType.find(typeid(ActualT));
-            // If theres no type we need to create an entry
-            if(itr == m_entitiesByType.end())
-            {
-                m_entitiesByType.emplace(typeid(ActualT) ,std::vector<Entity*>()); 
-            }
             m_entitiesByType[typeid(ActualT)].push_back(&e);
             m_allEntities.push_back(&e);
         }  
@@ -139,13 +133,6 @@ class Grid {
             };
             // end of inner class vector_of_pointers_view
             //-------------------------------------------------
-            // 'm_entitiesByType' is mutable, empty vector might be created below
-            auto itr = m_entitiesByType.find(typeid(ActualT));
-            // No types means return an empty vector
-            if(itr == m_entitiesByType.end())
-            {
-                m_entitiesByType.emplace(typeid(ActualT) ,std::vector<Entity*>()); 
-            }
             return ViewToVectorOfPointers{
                  m_entitiesByType[typeid(ActualT)] };
         }
@@ -196,7 +183,9 @@ class Grid {
             GridRow newRow(Longitude(360 / numRowCells), std::vector<Cell*>());
             // We add all the cells for our iterator to use
             for(int i = 0; i <  numRowCells; ++i){
+                // Add the actual cell to our linked-list
                 Cell &p_cell = m_cells.emplace_back(Cell());
+                // Add the poiner for the row
                 newRow.rowCells.push_back(&p_cell);
             }
             // move the row struct to our vector
