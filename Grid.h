@@ -211,6 +211,7 @@ class Grid {
 
 
     // returns the column for row row at longitude lon
+    // cell holds: [Left, Right), [Top, Bottom)
     std::size_t rowAndLonToCol(std::size_t row, Longitude lon) const{
         // if we are at the rightmost edge we need the last cell
         if(lon == Longitude(180)) return 0;
@@ -219,6 +220,7 @@ class Grid {
     }
 
     // Converts latitude to row
+    // cell holds: [Left, Right), [Top, Bottom)
     std::size_t latToRow(Latitude lat) const{
         //if we are at the north pole we need to return the last row
         if(lat == Latitude(90)) return m_gridCells.size() - 1;
@@ -230,10 +232,9 @@ class Grid {
     Cell* getCellAtInner(Coordinates c) const{
         // We just get the row and col and return the value
         auto row = latToRow(c.latitude());
-        auto col = rowAndLonToCol(row, c.longitude());
+        auto col = rowAndLonToCol(row, c.longitude());        
         return m_gridCells.at(row).rowCells.at(col);
     }
-    
 
     // Truncates a coordinate to cell
     double truncateCoordinates(double coordinate, double precision) const
@@ -244,69 +245,77 @@ class Grid {
     // truncates coordinates to representing coordinates of containing cell
     Coordinates truncateCoordinatesToCell(const Coordinates &coords) const
     {
-        double rowWidthOrig = m_gridCells.at(latToRow(coords.latitude())).cellWidthDeg;
-        double longitude = truncateCoordinates(static_cast<double>(coords.longitude()), rowWidthOrig);
-        double latitude = truncateCoordinates(static_cast<double>(coords.latitude()),static_cast<double>(m_cellHeightDeg));
-        // 180 [deg] and - 180 [deg] are the same cell
-        if(std::fabs(longitude + 180) <= Epsilon)
-        {
-            longitude = 180;
-        } 
-        // If we are at one of the poles are cells
-        if((std::fabs(latitude - 90) <= Epsilon) || (std::fabs(latitude + 90) <= Epsilon))
-        {
-            longitude = 0;
-        }
-        return {Longitude{(longitude)},
-            Latitude{latitude}};
+        auto row = latToRow(coords.latitude());
+        auto col = rowAndLonToCol(row, coords.longitude());
+        auto rowWidth = m_gridCells.at(row).cellWidthDeg;
+        Latitude lat =  Latitude(((double) row + 0.5)*  static_cast<double>(m_cellHeightDeg) - 90) ;
+        Longitude lon = Longitude(((double) col + 0.5) * static_cast<double>(rowWidth) - 180);
+        return Coordinates(lon, lat);
+
     }
 
     // Checks if a cell is contained within a given radius from a point
     bool isCellInRadius(const Coordinates &coords, const Coordinates &center, Meters radius) const{
-        auto rowWidth = m_gridCells.at(latToRow(coords.latitude())).cellWidthDeg; 
+        auto rowWidth = m_gridCells.at(latToRow(coords.latitude())).cellWidthDeg;
+        Longitude halfWidth(static_cast<double>(rowWidth) / 2);
+        Latitude halfHeight(static_cast<double>(m_cellHeightDeg) / 2); 
         // We just check the if the distance from the center to any of the edges is smaller or equal to radius
-        Coordinates bottomRight = Coordinates(coords.longitude() + rowWidth, coords.latitude());
-        Coordinates topLeft = Coordinates(coords.longitude(), coords.latitude() + m_cellHeightDeg);
-        Coordinates topRight = Coordinates(coords.longitude() + rowWidth, coords.latitude() + m_cellHeightDeg);
+        Coordinates bottomLeft = Coordinates(coords.longitude() - halfWidth, coords.latitude() - halfHeight);
+        Coordinates bottomRight = Coordinates(coords.longitude() + halfWidth, coords.latitude() - halfHeight);
+        Coordinates topLeft = Coordinates(coords.longitude() - halfWidth, coords.latitude() + halfHeight);
+        Coordinates topRight = Coordinates(coords.longitude() + halfWidth, coords.latitude() + halfHeight);
         // check if any edge is close enough
-        if(CoordinatesMath::distanceFromSegment(center, coords, topLeft) <= radius) return true;
-        if(CoordinatesMath::distanceFromSegment(center, coords, bottomRight) <= radius) return true;
+        if(CoordinatesMath::distanceFromSegment(center, bottomLeft, topLeft) <= radius) return true;
+        if(CoordinatesMath::distanceFromSegment(center, bottomLeft, bottomRight) <= radius) return true;
         if(CoordinatesMath::distanceFromSegment(center, bottomRight, topRight) <= radius) return true;
         if(CoordinatesMath::distanceFromSegment(center, topRight, topLeft) <= radius) return true;
         return false;
     }
 
+    // Aligns coordinates to longitude -180,180 and latitude -90 , 90
+    Coordinates alignCoordinates(const Coordinates &coords) const{
 
+        double newLon = CoordinatesMath::wrap180(static_cast<double>(coords.longitude()));
+        double newLat = CoordinatesMath::wrap90(static_cast<double>(coords.latitude()));
+        return Coordinates(Longitude(newLon), Latitude(newLat));
+    }
+    
     // adds all the cells in the row corresponding to nextCoordsRow which are at most radius away from center
     void getCellsInRow(const Coordinates &nextCoords, const Coordinates &center,
-        Meters radius, std::unordered_set<const Cell*> &visitedCells , std::vector<const Cell*> &results) const{
+        Meters radius, std::unordered_set<const Cell*> &visitedCells ,  std::unordered_set<Coordinates> &visitedCoords , 
+        std::vector<const Cell*> &results) const{
         auto nextCoordsRow = nextCoords;
         Longitude rowWidth = m_gridCells.at(latToRow(nextCoordsRow.latitude())).cellWidthDeg;
         // Going forward in row
-        while(isCellInRadius(nextCoordsRow, center, radius) && !visitedCells.contains(getCellAt(nextCoordsRow))){
+        while(isCellInRadius(alignCoordinates(nextCoordsRow), center, radius) && !visitedCoords.contains(alignCoordinates(nextCoordsRow))){
             // add the cell because it's in range
-           
             auto curCell = getCellAt(nextCoordsRow);
-            results.emplace_back(curCell);
-            visitedCells.insert(curCell);
+            if(!visitedCells.contains(curCell)) {
+                results.emplace_back(curCell); 
+                visitedCells.insert(curCell);
+            }
+            visitedCoords.insert(alignCoordinates(nextCoordsRow));
             // go to the next cell in row
             nextCoordsRow = Coordinates(Longitude(nextCoordsRow.longitude() + rowWidth), nextCoords.latitude());
         }
         // go backwards in row
         nextCoordsRow = Coordinates(Longitude(nextCoords.longitude() - rowWidth), nextCoords.latitude());
-
-        while(isCellInRadius(nextCoordsRow, center, radius) && !visitedCells.contains(getCellAt(nextCoordsRow))){
+        while(isCellInRadius(alignCoordinates(nextCoordsRow), center, radius) && !visitedCoords.contains(alignCoordinates(nextCoordsRow))){
             // add the cell because it's in range
             auto curCell = getCellAt(nextCoordsRow);
-            results.emplace_back(curCell);
-            visitedCells.insert(curCell);
+            if(!visitedCells.contains(curCell)) {
+                results.emplace_back(curCell);
+                visitedCells.insert(curCell);
+            }
+            visitedCoords.insert(alignCoordinates(nextCoordsRow));
             // go to the previous cell in row
-            nextCoordsRow = Coordinates(Longitude(nextCoordsRow.longitude() - rowWidth), nextCoords.latitude());
+            nextCoordsRow = Coordinates(Longitude(nextCoordsRow.longitude() - rowWidth), nextCoords.latitude()); 
         }
     }
+
     public:
     // Grid’s Constructors and Assignment:
-    Grid() : m_cellHeightDeg((double)180 / num_rows), m_cellHeightMeters(4 * CoordinatesMath::half_earth_hemisphere / num_rows), m_numCells(0)
+    Grid() : m_cellHeightDeg((double)180 / num_rows), m_cellHeightMeters(2 * CoordinatesMath::half_earth_hemisphere / num_rows), m_numCells(0)
     {
         initializeCells();
     }
@@ -330,29 +339,30 @@ class Grid {
     const Cell* getCellAt(Coordinates c) const {
         return getCellAtInner(c);
     }
-
+    
     // (Grid::B2) (BONUS: you may choose not to implemnt this function)
     std::vector<const Cell*> getCellsAt(Coordinates center, Meters radius) const {
         // This will hold our results
         std::vector<const Cell*> results;
         std::unordered_set<const Cell*> visitedCells;
+        std::unordered_set<Coordinates> visitedCoords;
         auto nextCoords = truncateCoordinatesToCell(center);
-
         // In this loop we are going upwards from center cell and checking adding all the cells in the correct range
-        while(isCellInRadius(nextCoords, center, radius) && !visitedCells.contains(getCellAt(nextCoords))){
+        while(isCellInRadius(alignCoordinates(nextCoords), center, radius) && !visitedCoords.contains(alignCoordinates(nextCoords))){
             // get all the cells in the row
-            getCellsInRow(nextCoords, center, radius, visitedCells, results);
+            getCellsInRow(nextCoords, center, radius, visitedCells, visitedCoords,  results);
             // go to row above
             nextCoords = Coordinates(nextCoords.longitude(), nextCoords.latitude() + m_cellHeightDeg);
         }
         // going downards now
         nextCoords = truncateCoordinatesToCell(center);
         nextCoords = Coordinates(nextCoords.longitude(), nextCoords.latitude() - m_cellHeightDeg);
-        while(isCellInRadius(nextCoords, center, radius) && !visitedCells.contains(getCellAt(nextCoords))){
+        while(isCellInRadius(alignCoordinates(nextCoords), center, radius) && !visitedCoords.contains(alignCoordinates(nextCoords))){
             // get all the cells in the row
-            getCellsInRow(nextCoords, center, radius, visitedCells, results);
+            getCellsInRow(nextCoords, center, radius, visitedCells, visitedCoords , results);
             // go to row below
             nextCoords = Coordinates(nextCoords.longitude(), nextCoords.latitude() - m_cellHeightDeg);
+            // Handle direction change
         }
         // If the radius is so smaller that we didn't reach any of the edges of the cell containing the coordinate, only this cell is
         // in the range

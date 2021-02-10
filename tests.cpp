@@ -50,7 +50,7 @@ TEST(GISEx4, addToCell){
     };
     struct B : A { void foo() const override {} };
     Coordinates coord{Longitude{361}, Latitude{1}};
-    Grid<A, 2310> grid;
+    Grid<A, 1200> grid;
     B b;
     const auto p_cell2 = grid.getCellAt(coord); 
     EXPECT_EQ(p_cell2->numEntities(), (std::size_t)0);
@@ -101,7 +101,7 @@ TEST(GISEx4, getEntitiesPredicateForAbstract){
     struct B : A { bool foo() const override {return true;} };
     struct C : A { bool foo() const override {return true;} };
     struct D : A { bool foo() const override {return false;} };
-    Grid<A, 4300> grid;
+    Grid<A, 400> grid;
     B b1, b2;
     C c;
     D d;
@@ -233,18 +233,18 @@ TEST(GISEx4, checkNumRows){
     EXPECT_EQ(grid.numRows(), (std::size_t) 10);
 } 
 // Checks if numRows works as expected
-// when setting 4  we expect to have less cols near the poles thus having more cells 
+// when setting 4 we expect to have less cols near the poles thus having more cells near the equator
 TEST(GISEx4, checkNumCells){
         struct A {
         virtual ~A() {}
         virtual bool foo() const = 0;
     };
     Grid<A, 4> grid;
-    EXPECT_EQ(grid.numCells(), (std::size_t) 12);
+    EXPECT_EQ(grid.numCells(), (std::size_t) 20);
 } 
 
 // when setting 4 rows we expect to have less cols near the poles and more near the equator
-// expecting 2 columns near the poles and in each one near the equator 4, longitude should have no effect
+// expecting ~3 columns near the poles and in each one near the equator ~7, longitude should have no effect
 TEST(GISEx4, checkNumCols){
         struct A {
         virtual ~A() {}
@@ -255,10 +255,10 @@ TEST(GISEx4, checkNumCols){
     Coordinates northPole(Longitude(15), Latitude(90));
     Coordinates nearEquator1(Longitude(180), Latitude(-20));
     Coordinates nearEquator2(Longitude(-180), Latitude(20));
-    EXPECT_EQ(grid.numCols(northPole), (std::size_t) 2);
-    EXPECT_EQ(grid.numCols(southPole), (std::size_t) 2);
-    EXPECT_EQ(grid.numCols(nearEquator1), (std::size_t) 4);
-    EXPECT_EQ(grid.numCols(nearEquator2), (std::size_t) 4);
+    EXPECT_EQ(grid.numCols(northPole), (std::size_t) 3);
+    EXPECT_EQ(grid.numCols(southPole), (std::size_t) 3);
+    EXPECT_EQ(grid.numCols(nearEquator1), (std::size_t) 7);
+    EXPECT_EQ(grid.numCols(nearEquator2), (std::size_t) 7);
 } 
 
 // Checks the cell iterator is of expected type and validates all the entries are correct
@@ -289,12 +289,46 @@ TEST(GISEx4, checkGetEntitiesRadiusEntireMap){
 }
 
 // Checks entities within 0 radius (should only return one cell)
-TEST(GISEx4, checkGetEntitiesRadius){
+TEST(GISEx4, checkGetEntitiesZeroRadius){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    Grid<A, 12> grid;
+    Coordinates c(Longitude(175), Latitude(-20));
+    EXPECT_EQ(grid.getCellsAt(c, Meters(0)).size(), (std::size_t) 1);
+} 
+
+// Checks entities within 0 radius on border (should return 2)
+TEST(GISEx4, checkGetEntitiesRadiusBorder){
         struct A {
         virtual ~A() {}
         virtual bool foo() const = 0;
     };
     Grid<A, 12> grid;
     Coordinates c(Longitude(180), Latitude(-20));
-    EXPECT_EQ(grid.getCellsAt(c, Meters(0)).size(), (std::size_t) 1);
+    EXPECT_EQ(grid.getCellsAt(c, Meters(0)).size(), (std::size_t) 2);
+} 
+
+// Checks entities within same radius on poles - all sizes should be identical
+TEST(GISEx4, checkGetEntitiesRadiusTesting){
+        struct A {
+        virtual ~A() {}
+        virtual bool foo() const = 0;
+    };
+    Grid<A, 20> grid;
+
+    Coordinates c1(Longitude(12), Latitude(90));
+    Coordinates c2(Longitude(92), Latitude(-90));
+    Coordinates c3(Longitude(40), Latitude(90));
+    Coordinates c4(Longitude(50), Latitude(-90));
+
+    int size1 = grid.getCellsAt(c1, Meters(2000000)).size();
+    int size2 = grid.getCellsAt(c2, Meters(2000000)).size();
+    int size3 = grid.getCellsAt(c3, Meters(2000000)).size();
+    int size4 = grid.getCellsAt(c4, Meters(2000000)).size();
+
+    EXPECT_EQ(size1, size2);
+    EXPECT_EQ(size2, size3);
+    EXPECT_EQ(size3, size4);
 } 
