@@ -73,7 +73,7 @@ TEST(GISEx4, checkCellIterator){
     EXPECT_EQ(typeid(*(p_cell->begin())), typeid(A*));
 }
 
-// Checks the cell iterator is of expected type and validates all the entries are correct
+// Checks num entities of concrete type
 TEST(GISEx4, checkConcreteNumEntities){
         struct A {
         virtual ~A() {}
@@ -117,7 +117,7 @@ TEST(GISEx4, getEntitiesPredicateForAbstract){
     EXPECT_EQ(p_cell->getEntities(predicate).size(), (std::size_t) 3);
 } 
 
-// Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&);
+// Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&)
 TEST(GISEx4, getEntitiesAbstractPredicateForConcrete){
         struct A {
         virtual ~A() {}
@@ -143,7 +143,7 @@ TEST(GISEx4, getEntitiesAbstractPredicateForConcrete){
     EXPECT_EQ(p_cell->getEntities<B>(predicate).size(), (std::size_t) 2);
 } 
 
-// Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&);
+// Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&)
 TEST(GISEx4, getEntitiesConcretePredicateForConcrete){
         struct A {
         virtual ~A() {}
@@ -170,7 +170,7 @@ TEST(GISEx4, getEntitiesConcretePredicateForConcrete){
 }
 
 
-// Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&) and limit;
+// Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&) and limit
 TEST(GISEx4, getEntitiesConcretePredicateForConcreteAndLimit){
         struct A {
         virtual ~A() {}
@@ -196,7 +196,7 @@ TEST(GISEx4, getEntitiesConcretePredicateForConcreteAndLimit){
     EXPECT_EQ(p_cell->getEntities<B>(predicate, 1).size(), (std::size_t) 1);
 }
 
-// Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&) and limit;
+// Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&) and limit
 TEST(GISEx4, getEntitiesAbstractPredicateForConcreteAndLimit){
         struct A {
         virtual ~A() {}
@@ -232,8 +232,8 @@ TEST(GISEx4, checkNumRows){
     Grid<A, 10> grid;
     EXPECT_EQ(grid.numRows(), (std::size_t) 10);
 } 
-// Checks if numRows works as expected
-// when setting 4 we expect to have less cols near the poles thus having more cells near the equator
+
+// Checks if numCells works as expected
 TEST(GISEx4, checkNumCells){
         struct A {
         virtual ~A() {}
@@ -261,7 +261,7 @@ TEST(GISEx4, checkNumCols){
     EXPECT_EQ(grid.numCols(nearEquator2), (std::size_t) 7);
 } 
 
-// Checks the cell iterator is of expected type and validates all the entries are correct
+// Checks the grid iterator is of expected type and validates it is updated correctly
 TEST(GISEx4, checkGridIterator){
         struct A {
         virtual ~A() {}

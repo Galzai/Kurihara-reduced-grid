@@ -22,13 +22,13 @@ template<class Me, class Other> concept concrete_derived_or_same =
 // class Grid
 template<typename Entity, std::size_t num_rows> requires (num_rows > 0)
 class Grid { 
+
+    // Forward declartions
     struct GridRow;
     class Cell;
-    friend class FooTest;
 
+    // Holds the cell height in both degrees and meters
     Latitude m_cellHeightDeg;
-    Meters m_cellHeightMeters;
-    std::size_t m_numCells;
     mutable std::vector<GridRow> m_gridCells;
     std::list<Cell> m_cells;
 
@@ -180,8 +180,10 @@ class Grid {
 
     // initializes the cells
     void initializeCells(){
-        Latitude bottomLat(-90);
-        Latitude topLat(0);
+        Latitude bottomLat(CoordinatesMath::s_pole_lat);
+        Latitude topLat(CoordinatesMath::equator_lat);
+        Meters cellHeightMeters(2 * CoordinatesMath::half_earth_hemisphere / num_rows);
+
         for(std::size_t curRow = 0; curRow < num_rows; ++curRow)
         {
             topLat = bottomLat + m_cellHeightDeg;
@@ -190,8 +192,7 @@ class Grid {
             auto botPerim = CoordinatesMath::perimeterOnLatitude(bottomLat);
             auto avgPerim = (topPerim + botPerim) / 2;
             // get num of cells in row
-            int numRowCells = std::ceil(avgPerim / m_cellHeightMeters);
-            m_numCells += numRowCells;
+            int numRowCells = std::ceil(avgPerim / cellHeightMeters);
             // initialize row struct
             GridRow newRow(Longitude(360 /((double) numRowCells)), std::vector<Cell*>());
             // We add all the cells for our iterator to use
@@ -215,6 +216,7 @@ class Grid {
         // if we are at the rightmost edge we need the last cell
         if(lon == Longitude(180)) return 0;
         auto colCellWidth = m_gridCells.at(row).cellWidthDeg;
+        // align to 0,360 and divide by width of row
         return std::floor((CoordinatesMath::wrap180(static_cast<double>(lon)) + 180) / static_cast<double>(colCellWidth));
     }
 
@@ -222,8 +224,8 @@ class Grid {
     // cell holds: [Left, Right), [Top, Bottom)
     std::size_t latToRow(Latitude lat) const{
         //if we are at the north pole we need to return the last row
-        if(lat == Latitude(90)) return m_gridCells.size() - 1;
-        // need to align to 180 and divide by cell height to get the row
+        if(lat == CoordinatesMath::n_pole_lat) return m_gridCells.size() - 1;
+        // need to align to 0,180 and divide by cell height to get the row
         return std::floor((CoordinatesMath::wrap90(static_cast<double>(lat)) + 90) / static_cast<double>(m_cellHeightDeg));
     }
 
@@ -235,18 +237,14 @@ class Grid {
         return m_gridCells.at(row).rowCells.at(col);
     }
 
-    // Truncates a coordinate to cell
-    double truncateCoordinates(double coordinate, double precision) const
-    {           
-            return std::floor(coordinate / precision) * precision;
-    }
-
     // truncates coordinates to representing coordinates of containing cell
     Coordinates truncateCoordinatesToCell(const Coordinates &coords) const
     {
+        // get the row and col
         auto row = latToRow(coords.latitude());
         auto col = rowAndLonToCol(row, coords.longitude());
         auto rowWidth = m_gridCells.at(row).cellWidthDeg;
+        // set middlle of cell as representive
         Latitude lat =  Latitude(((double) row + 0.5)*  static_cast<double>(m_cellHeightDeg) - 90) ;
         Longitude lon = Longitude(((double) col + 0.5) * static_cast<double>(rowWidth) - 180);
         return Coordinates(lon, lat);
@@ -273,7 +271,6 @@ class Grid {
 
     // Aligns coordinates to longitude -180,180 and latitude -90 , 90
     Coordinates alignCoordinates(const Coordinates &coords) const{
-
         double newLon = CoordinatesMath::wrap180(static_cast<double>(coords.longitude()));
         double newLat = CoordinatesMath::wrap90(static_cast<double>(coords.latitude()));
         return Coordinates(Longitude(newLon), Latitude(newLat));
@@ -314,7 +311,7 @@ class Grid {
 
     public:
     // Grid’s Constructors and Assignment:
-    Grid() : m_cellHeightDeg((double)180 / num_rows), m_cellHeightMeters(2 * CoordinatesMath::half_earth_hemisphere / num_rows), m_numCells(0)
+    Grid() : m_cellHeightDeg((double)180 / num_rows)
     {
         initializeCells();
     }
@@ -383,7 +380,7 @@ class Grid {
 
     // (Grid::C3) 
     std::size_t numCells() const noexcept {
-        return m_numCells; 
+        return m_cells.size(); 
     }
 
     // Set this to true if you are implementing a sparse grid.
