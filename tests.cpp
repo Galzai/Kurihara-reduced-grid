@@ -152,7 +152,7 @@ TEST(GISEx4, getEntitiesConcretePredicateForConcrete){
     struct B : A {B(int val) :x(val){}; int x; bool foo() const override {return x == 1;} };
     struct C : A { bool foo() const override {return true;} };
     struct D : A { bool foo() const override {return false;} };
-    Grid<A, 5> grid;
+    Grid<A, 150> grid;
     B b1(1), b2(2) ,b3(1);
     C c;
     D d;
@@ -179,7 +179,7 @@ TEST(GISEx4, getEntitiesConcretePredicateForConcreteAndLimit){
     struct B : A {B(int val) :x(val){}; int x; bool foo() const override {return x == 1;} };
     struct C : A { bool foo() const override {return true;} };
     struct D : A { bool foo() const override {return false;} };
-    Grid<A, 5> grid;
+    Grid<A, 130> grid;
     B b1(1), b2(1) ,b3(1);
     C c;
     D d;
@@ -205,7 +205,7 @@ TEST(GISEx4, getEntitiesAbstractPredicateForConcreteAndLimit){
     struct B : A {B(int val) :x(val){}; int x; bool foo() const override {return x == 1;} };
     struct C : A { bool foo() const override {return true;} };
     struct D : A { bool foo() const override {return false;} };
-    Grid<A, 5> grid;
+    Grid<A, 158> grid;
     B b1(1), b2(1) ,b3(1);
     C c;
     D d;
@@ -283,7 +283,7 @@ TEST(GISEx4, checkGetEntitiesRadiusEntireMap){
         virtual ~A() {}
         virtual bool foo() const = 0;
     };
-    Grid<A, 4> grid;
+    Grid<A, 400> grid;
     Coordinates c(Longitude(180), Latitude(-20));
     EXPECT_EQ(grid.getCellsAt(c, CoordinatesMath::earth_radius * 100).size(), grid.numCells());
 }
@@ -311,7 +311,7 @@ TEST(GISEx4, checkGetEntitiesRadiusBorder){
 } 
 
 // Checks entities within same radius on poles - all sizes should be identical
-TEST(GISEx4, checkGetEntitiesRadiusTesting){
+TEST(GISEx4, checkGetEntitiesRadiusPoles){
         struct A {
         virtual ~A() {}
         virtual bool foo() const = 0;

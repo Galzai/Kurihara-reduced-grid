@@ -56,7 +56,7 @@ class Grid {
         }  
         // Cell’s Constructors and Assignment:
         // There are no constructors that are required by the API. You should decide whether to implement, block or rely on the default for copy and move constructors, as well as for the assignment operators.
-        Cell(){};
+
         // Cell’s Destructor:
         // You should decide whether there is a need to implement a user defined destructor.
 
@@ -208,7 +208,6 @@ class Grid {
             bottomLat += m_cellHeightDeg;
         }
     }
-
 
     // returns the column for row row at longitude lon
     // cell holds: [Left, Right), [Top, Bottom)
