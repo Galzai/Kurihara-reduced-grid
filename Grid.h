@@ -54,11 +54,6 @@ class Grid {
             m_entitiesByType[typeid(ActualT)].push_back(&e);
             m_allEntities.push_back(&e);
         }  
-        // Cell’s Constructors and Assignment:
-        // There are no constructors that are required by the API. You should decide whether to implement, block or rely on the default for copy and move constructors, as well as for the assignment operators.
-
-        // Cell’s Destructor:
-        // You should decide whether there is a need to implement a user defined destructor.
 
         // (Cell::A1) Getting Entities from a Cell:
         // returns all entities in that cell, which return true for the PredicateFunc.
@@ -211,22 +206,26 @@ class Grid {
     }
 
     // returns the column for row row at longitude lon
-    // cell holds: [Left, Right), [Top, Bottom)
+    // cell holds: [Left, Right)
     std::size_t rowAndLonToCol(std::size_t row, Longitude lon) const{
         // if we are at the rightmost edge we need the last cell
-        if(lon == Longitude(180)) return 0;
+        if(lon == Longitude(360)) return 0;
         auto colCellWidth = m_gridCells.at(row).cellWidthDeg;
         // align to 0,360 and divide by width of row
-        return std::floor((CoordinatesMath::wrap180(static_cast<double>(lon)) + 180) / static_cast<double>(colCellWidth));
+        return std::floor((CoordinatesMath::wrap360(static_cast<double>(lon)) / static_cast<double>(colCellWidth)));
     }
 
     // Converts latitude to row
-    // cell holds: [Left, Right), [Top, Bottom)
+    // cell holds [Top, Bottom)
     std::size_t latToRow(Latitude lat) const{
-        //if we are at the north pole we need to return the last row
+        //if we are at the south pole we need to return the first row
+        if(lat == CoordinatesMath::s_pole_lat) return 0;
         if(lat == CoordinatesMath::n_pole_lat) return m_gridCells.size() - 1;
+        // if we are on the border the coordinate belongs to the cell below (unless south pole)
+        auto coordAlign =(CoordinatesMath::wrap90(static_cast<double>(lat)) + 90);
+        auto borderCellDelta = (fmod(coordAlign, static_cast<double>(m_cellHeightDeg)) == 0) ? 1 : 0;
         // need to align to 0,180 and divide by cell height to get the row
-        return std::floor((CoordinatesMath::wrap90(static_cast<double>(lat)) + 90) / static_cast<double>(m_cellHeightDeg));
+        return std::floor(coordAlign / static_cast<double>(m_cellHeightDeg)) - borderCellDelta;
     }
 
     // Non const return of cell at coordinates
@@ -245,10 +244,26 @@ class Grid {
         auto col = rowAndLonToCol(row, coords.longitude());
         auto rowWidth = m_gridCells.at(row).cellWidthDeg;
         // set middlle of cell as representive
-        Latitude lat =  Latitude(((double) row + 0.5)*  static_cast<double>(m_cellHeightDeg) - 90) ;
-        Longitude lon = Longitude(((double) col + 0.5) * static_cast<double>(rowWidth) - 180);
+        Latitude lat =  Latitude(((double) row + 0.5) * static_cast<double>(m_cellHeightDeg) - 90) ;
+        Longitude lon = Longitude(((double) col + 0.5) * static_cast<double>(rowWidth));
         return Coordinates(lon, lat);
 
+    }
+
+    // returns a next row to iterate on (either above or below given coordinate)
+    Coordinates getNextRowCell(const Coordinates &coords, bool upwards) const
+    {
+        // We either go up or down, the multiplier can be larger/smaller than the amount of rows
+        // to prevent traversal direction change
+        auto latMultiplier = latToRow(coords.latitude()) + (upwards ? 1: -1);
+        // we need the actual row for finding the width and col
+        auto row = ((latMultiplier % m_gridCells.size()) + m_gridCells.size()) % m_gridCells.size();
+        auto col = rowAndLonToCol(row, coords.longitude());
+        auto rowWidth = m_gridCells.at(row).cellWidthDeg;
+        // set middlle of cell as representive
+        Latitude lat =  Latitude(((double) latMultiplier + 0.5) * static_cast<double>(m_cellHeightDeg) - 90) ;
+        Longitude lon = Longitude(((double) col + 0.5) * static_cast<double>(rowWidth));
+        return Coordinates(lon, lat);
     }
 
     // Checks if a cell is contained within a given radius from a point
@@ -316,9 +331,6 @@ class Grid {
         initializeCells();
     }
 
-    // Grid’s Destructor:
-    // You should decide whether there is a need to implement a user defined destructor.
-
     // Adding Entities to the Grid:
 
     // (Grid::A1) 
@@ -348,17 +360,16 @@ class Grid {
             // get all the cells in the row
             getCellsInRow(nextCoords, center, radius, visitedCells, visitedCoords,  results);
             // go to row above
-            nextCoords = Coordinates(nextCoords.longitude(), nextCoords.latitude() + m_cellHeightDeg);
+            nextCoords = getNextRowCell(nextCoords, true);
         }
         // going downards now
         nextCoords = truncateCoordinatesToCell(center);
-        nextCoords = Coordinates(nextCoords.longitude(), nextCoords.latitude() - m_cellHeightDeg);
+        nextCoords = getNextRowCell(nextCoords, false);
         while(isCellInRadius(alignCoordinates(nextCoords), center, radius) && !visitedCoords.contains(alignCoordinates(nextCoords))){
             // get all the cells in the row
             getCellsInRow(nextCoords, center, radius, visitedCells, visitedCoords , results);
             // go to row below
-            nextCoords = Coordinates(nextCoords.longitude(), nextCoords.latitude() - m_cellHeightDeg);
-            // Handle direction change
+            nextCoords = getNextRowCell(nextCoords, false);
         }
         // If the radius is so smaller that we didn't reach any of the edges of the cell containing the coordinate, only this cell is
         // in the range
@@ -391,10 +402,10 @@ class Grid {
     // 2. All Cells, if is_sparse==false
     auto begin() const noexcept { 
 
-        return m_cells.begin(); 
+        return m_cells.cbegin(); 
     }
 
     auto end() const noexcept { 
-        return m_cells.end(); 
+        return m_cells.cend(); 
     }
 };

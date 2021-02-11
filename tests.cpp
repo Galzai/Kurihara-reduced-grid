@@ -306,7 +306,7 @@ TEST(GISEx4, checkGetEntitiesRadiusBorder){
         virtual bool foo() const = 0;
     };
     Grid<A, 12> grid;
-    Coordinates c(Longitude(180), Latitude(-20));
+    Coordinates c(Longitude(0), Latitude(-20));
     EXPECT_EQ(grid.getCellsAt(c, Meters(0)).size(), (std::size_t) 2);
 } 
 
@@ -316,7 +316,7 @@ TEST(GISEx4, checkGetEntitiesRadiusPoles){
         virtual ~A() {}
         virtual bool foo() const = 0;
     };
-    Grid<A, 20> grid;
+    Grid<A, 277> grid;
 
     Coordinates c1(Longitude(12), Latitude(90));
     Coordinates c2(Longitude(92), Latitude(-90));
