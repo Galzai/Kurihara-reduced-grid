@@ -33,7 +33,7 @@ Finds the row of the coordinate and returs the size of it
 returns the size of the cell linked list
 
 ### iterators
-Returns the linked list of cells begin and end iterators accordingly - this allows for a very simple clean implementation that uses built in iterators without too much overhead (only hold pointers in addition to cells) and no need to access multiple different vectors to output iterator.  
+Returns the linked list of cells cbegin and cend iterators accordingly - this allows for a very simple clean implementation that uses built in iterators without too much overhead (only hold pointers in addition to cells) and no need to access multiple different vectors to output iterator.  
 
 ## Cell
 The cells implements no constructors besides the default constructor.
