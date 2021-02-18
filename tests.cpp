@@ -156,10 +156,11 @@ TEST(GISEx4, getEntitiesConcretePredicateForConcrete){
     B b1(1), b2(2) ,b3(1);
     C c;
     D d;
+    std::shared_ptr<A> p_b2 = std::make_shared<B>(b2);
 
     Coordinates coord{Longitude{45}, Latitude{89.009}};
     const auto p_cell = grid.add(coord, b1);
-    grid.add(coord, b2);
+    grid.add(coord, *p_b2);
     grid.add(coord, b3);
     grid.add(coord, c);
     grid.add(coord, d);
@@ -183,10 +184,11 @@ TEST(GISEx4, getEntitiesConcretePredicateForConcreteAndLimit){
     B b1(1), b2(1) ,b3(1);
     C c;
     D d;
+    std::shared_ptr<A> p_b2 = std::make_shared<B>(b2);
 
     Coordinates coord{Longitude{45}, Latitude{89.009}};
     const auto p_cell = grid.add(coord, b1);
-    grid.add(coord, b2);
+    grid.add(coord, *p_b2);
     grid.add(coord, b3);
     grid.add(coord, c);
     grid.add(coord, d);
@@ -209,10 +211,11 @@ TEST(GISEx4, getEntitiesAbstractPredicateForConcreteAndLimit){
     B b1(1), b2(1) ,b3(1);
     C c;
     D d;
+    std::shared_ptr<A> p_b2 = std::make_shared<B>(b2);
 
     Coordinates coord{Longitude{45}, Latitude{89.009}};
     const auto p_cell = grid.add(coord, b1);
-    grid.add(coord, b2);
+    grid.add(coord, *p_b2);
     grid.add(coord, b3);
     grid.add(coord, c);
     grid.add(coord, d);

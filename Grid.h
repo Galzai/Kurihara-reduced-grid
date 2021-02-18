@@ -51,7 +51,7 @@ class Grid {
         // Add an entity of concrete type to cell by type and to all
         template<typename ActualT> requires derived_or_same<ActualT, Entity>
         void add(ActualT& e) {
-            m_entitiesByType[typeid(ActualT)].push_back(&e);
+            m_entitiesByType[typeid(e)].push_back(&e);
             m_allEntities.push_back(&e);
         }  
 
@@ -94,10 +94,11 @@ class Grid {
             // copy untill full or untill no more to copy
             for(auto p_entity : m_entitiesByType.at(typeid(ActualT)))
             {
+                if(curCopied == limit) break;
                 ActualT *p_actualEntity = dynamic_cast<ActualT*>(p_entity);
                 if(func(*p_actualEntity)){
                     filteredEntities.push_back(p_actualEntity);
-                    if(++curCopied == limit) break;
+                    ++curCopied;
                 }
             }
             return filteredEntities;
