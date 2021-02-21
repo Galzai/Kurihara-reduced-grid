@@ -13,8 +13,7 @@ The grid contains only one no-arg constructor, the constructor takes the templat
 * The method stated above allows the cell iterator to be directly used as the linked list`s overhead cleanly and without clutter.
 
 ### getCellAt
-In order to find the cell, we align each coordinate to 0 - 180 deg for latitude and 0
-- 360 deg for longitude, we then find the row by dividing the by cell height, find the row's height from our data structure, and then find the column similarly, while taking into account the north pole and 180 longitude.  
+In order to find the cell, we align each coordinate to 0 - 180 deg for latitude and 0 - 360 deg for longitude, we then find the row by dividing the by cell height, find the row's height from our data structure, and then find the column similarly, while taking into account the north pole and 180 longitude.  
 
 ### getCellAt - with radius (Bonus) 
 * We first find a representive for coordinate for the cell of the given coordinate (center of the cell). 
@@ -58,23 +57,23 @@ If by type returns the size of the vector in mapping of type, without type retur
 Simply returns the cell's all entities vector iterator, this allows for a simple and clean implementation with a using the containers already existing iterator with O(1) additional space (and assumingly more efficient then implementing an iterator which stitches together the map).
 
 ## Tests
-* DocTest - The cell view test given by the instructors. 
-* addToCell -validating entities are correctly inserted to cells.
-* checkCellIterator - validates the cell iterator derefrence returns the correct type.
-* checkConcreteNumEntities - validates numEntities in cell of concrete type.
-* getEntitiesPredicateForAbstract - checks if getEntities with abstract type works
-* getEntitiesAbstractPredicateForConcrete - Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&).  
-* getEntitiesConcretePredicateForConcrete - Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&).  
-* getEntitiesConcretePredicateForConcreteAndLimit - Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&) and limit.  
-* getEntitiesAbstractPredicateForConcreteAndLimit - Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&) and limit.
-* checkNumRows - checks if numRows works as expected.
-* checkNumCells - checks num cell works as expected.
-* checkNumCols - checks if numCols works as expected, expecting more cols near the equator and less near the poles while being sized symetrically.
-* checkGridIterator - checks the grid iterator returns a correct refrence to the cells.  
-* checkGetEntitiesRadiusEntireMap -  checks that entering a radius larger than the entire map in getCellsAt returns all tne cells.  
-* checkGetEntitiesZeroRadius - checks the setting 0 radius on coordinate that isnt on edge returns only 1 cell in getCellsAt.  
-* checkGetEntitiesRadiusBorder - checks that if the radius is 0 and the coordinate is on an edge we get 2 cells in getCellsAt.
-* checkGetEntitiesRadiusPoles - checks that at the poles at any longitude, if the radius is identical we get the same number of cells in getCellsAt.  
+* `DocTest` - The cell view test given by the instructors. 
+* `addToCell` -validating entities are correctly inserted to cells.
+* `checkCellIterator` - validates the cell iterator derefrence returns the correct type.
+* `checkConcreteNumEntities` - validates numEntities in cell of concrete type.
+* `getEntitiesPredicateForAbstract` - checks if getEntities with abstract type works
+* `getEntitiesAbstractPredicateForConcrete` - Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&).  
+* `getEntitiesConcretePredicateForConcrete` - Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&).  
+* `getEntitiesConcretePredicateForConcreteAndLimit` - Checks if getEntities works with concrete type with predicate signature bool pred(const ActualT&) and limit.  
+* `getEntitiesAbstractPredicateForConcreteAndLimit` - Checks if getEntities works with concrete type with predicate signature bool pred(const Entity&) and limit.
+* `checkNumRows` - checks if numRows works as expected.
+* `checkNumCells` - checks num cell works as expected.
+* `checkNumCols` - checks if numCols works as expected, expecting more cols near the equator and less near the poles while being sized symetrically.
+* `checkGridIterator` - checks the grid iterator returns a correct refrence to the cells.  
+* `checkGetEntitiesRadiusEntireMap` - checks that entering a radius larger than the entire map in getCellsAt returns all tne cells.  
+* `checkGetEntitiesZeroRadius` - checks the setting 0 radius on coordinate that isnt on edge returns only 1 cell in getCellsAt.  
+* `checkGetEntitiesRadiusBorder` - checks that if the radius is 0 and the coordinate is on an edge we get 2 cells in getCellsAt.
+* `checkGetEntitiesRadiusPoles` - checks that at the poles at any longitude, if the radius is identical we get the same number of cells in getCellsAt.  
 
 
 

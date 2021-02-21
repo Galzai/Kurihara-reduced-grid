@@ -12,7 +12,6 @@
 #include <stack>
 
 // Two concepts required by the below functions:
-
 template<class Me, class Other> concept derived_or_same =
     std::same_as<Me, Other> || std::derived_from<Me, Other>;
 
@@ -27,7 +26,7 @@ class Grid {
     struct GridRow;
     class Cell;
 
-    // Holds the cell height in both degrees and meters
+    // Holds the cell height degrees
     Latitude m_cellHeightDeg;
     mutable std::vector<GridRow> m_gridCells;
     std::list<Cell> m_cells;
